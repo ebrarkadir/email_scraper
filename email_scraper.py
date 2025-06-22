@@ -1,51 +1,79 @@
 from bs4 import BeautifulSoup
 import requests
-import requests.exceptions
 import urllib.parse
 from collections import deque
 import re
 
-user_url = str(input('[+] Enter Target URL To Scan: '))
-urls = deque([user_url])
+# Kullanıcıdan hedef URL alınır
+user_url = input('[+] Enter Target URL To Scan: ').strip()
 
+# Hedef domain belirlenir
+domain = urllib.parse.urlsplit(user_url).netloc
+
+# İşlem yapılacak bağlantıların kuyruğu
+urls = deque([user_url])
 scraped_urls = set()
 emails = set()
 
+# Maksimum taranacak sayfa sayısı
+max_visits = 100
 count = 0
+
 try:
-    while len(urls):
-        count += 1
-        if count == 100:
-            break
+    while urls and count < max_visits:
         url = urls.popleft()
         scraped_urls.add(url)
+        count += 1
 
-        parts = urllib.parse.urlsplit(url)
-        base_url = '{0.scheme}://{0.netloc}'.format(parts)
+        print(f'[{count}] Scanning: {url}')
 
-        path = url[:url.rfind('/')+1] if '/' in parts.path else url
-
-        print('[%d] Processing %s' % (count, url))
         try:
+            # Burada headers yok, sadece sade istek
             response = requests.get(url)
-        except (requests.exceptions.MissingSchema, requests.exceptions.ConnectionError):
+        except requests.RequestException as e:
+            print(f'[!] Request failed: {e}')
             continue
 
-        new_emails = set(re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", response.text, re.I))
+        # Email adreslerini regex ile bul
+        new_emails = set(re.findall(
+            r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+",
+            response.text, re.I
+        ))
+        if new_emails:
+            print(f'[+] Found {len(new_emails)} new email(s).')
         emails.update(new_emails)
 
-        soup = BeautifulSoup(response.text, features="lxml")
-
+        # Sayfadaki bağlantılar (linkler) işlenir
+        soup = BeautifulSoup(response.text, "lxml")
         for anchor in soup.find_all("a"):
-            link = anchor.attrs['href'] if 'href' in anchor.attrs else ''
-            if link.startswith('/'):
-                link = base_url + link
-            elif not link.startswith('http'):
-                link = path + link
-            if not link in urls and not link in scraped_urls:
-                urls.append(link)
-except KeyboardInterrupt:
-    print('[-] Closing!')
+            href = anchor.get("href")
+            if not href:
+                continue
 
-for mail in emails:
-    print(mail)
+            # href'i normalize et
+            href = urllib.parse.urljoin(url, href)
+            href_parsed = urllib.parse.urlsplit(href)
+
+            # Domain dışına çıkma
+            if href_parsed.netloc and domain not in href_parsed.netloc:
+                continue
+
+            # Daha önce işlenmediyse kuyruğa ekle
+            if href not in scraped_urls and href not in urls:
+                urls.append(href)
+
+except KeyboardInterrupt:
+    print('\n[-] Interrupted by user!')
+
+# Bulunan emailleri yazdır
+print('\n[✓] Email addresses found:')
+for email in sorted(emails):
+    print(email)
+
+# İsteğe bağlı kaydetme
+save = input('\n[?] Save results to "emails.txt"? (y/n): ').lower()
+if save == 'y':
+    with open('emails.txt', 'w') as f:
+        for email in sorted(emails):
+            f.write(email + '\n')
+    print('[✓] Emails saved to emails.txt')
