@@ -49,23 +49,31 @@ Bu scraper, User-Agent header’ı ekleyerek kendini bir tarayıcı gibi tanıt�
 
 ```http
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/114.0.0.0 Safari/537.36
+```
 
----
-##🚀 Kullanım
+## 🚀 Kullanım
 
-# 1. Projeyi GitHub üzerinden klonlayın
+### 1. Projeyi GitHub üzerinden klonlayın
+```
 git clone https://github.com/kullanici/email-scraper.git
+```
 
-# 2. Proje klasörüne geçin
+### 2. Proje klasörüne geçin
+```
 cd email-scraper
+```
 
-# 3. Gerekli Python kütüphanelerini yükleyin
+### 3. Gerekli Python kütüphanelerini yükleyin
+```
 pip install requests beautifulsoup4 lxml
+```
+
+### 4. Script'i çalıştırın
+```
+python3 email_scraper.py
+```
 
 # 4. Script'i çalıştırın
+```
 python3 email_scraper.py
-
-
-
-# 4. Script'i çalıştırın
-python3 email_scraper.py
+```
