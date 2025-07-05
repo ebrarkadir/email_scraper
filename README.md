@@ -73,7 +73,4 @@ pip install requests beautifulsoup4 lxml
 python3 email_scraper.py
 ```
 
-# 4. Script'i çalıştırın
-```
-python3 email_scraper.py
-```
+
